@@ -12,11 +12,25 @@ type Props = {
   placeholder: string;
   buttonLabel: string;
   empty: string;
+  renderTop?: (ctx: {
+    items: ListItem[];
+    nameById: Map<string, string>;
+    claim: (text: string) => Promise<boolean>;
+  }) => React.ReactNode;
 };
 
 const COLS = "id, person_id, text, created_at";
 
-export function ListTab({ me, people, table, title, placeholder, buttonLabel, empty }: Props) {
+export function ListTab({
+  me,
+  people,
+  table,
+  title,
+  placeholder,
+  buttonLabel,
+  empty,
+  renderTop,
+}: Props) {
   const [items, setItems] = useState<ListItem[] | null>(null);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -58,24 +72,29 @@ export function ListTab({ me, people, table, title, placeholder, buttonLabel, em
     };
   }, [table]);
 
-  async function add(e: React.FormEvent) {
-    e.preventDefault();
-    const value = text.trim();
-    if (!value || busy) return;
-    setBusy(true);
+  async function insert(value: string): Promise<boolean> {
     setError(null);
     const { data, error } = await supabase
       .from(table)
       .insert({ person_id: me.id, text: value })
       .select(COLS)
       .single();
-    setBusy(false);
     if (error || !data) {
       setError(error?.message ?? "Couldn't save");
-      return;
+      return false;
     }
-    setText("");
     setItems((prev) => [data, ...(prev ?? []).filter((i) => i.id !== data.id)]);
+    return true;
+  }
+
+  async function add(e: React.FormEvent) {
+    e.preventDefault();
+    const value = text.trim();
+    if (!value || busy) return;
+    setBusy(true);
+    const ok = await insert(value);
+    setBusy(false);
+    if (ok) setText("");
   }
 
   async function remove(item: ListItem) {
@@ -95,6 +114,7 @@ export function ListTab({ me, people, table, title, placeholder, buttonLabel, em
 
   return (
     <section className="mx-auto max-w-xl">
+      {renderTop && items && renderTop({ items, nameById, claim: insert })}
       <h2 className="text-lg font-semibold">{title}</h2>
       <form onSubmit={add} className="mt-3 flex gap-2">
         <input

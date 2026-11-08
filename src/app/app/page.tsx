@@ -7,6 +7,7 @@ import { clearMe, useMe } from "@/lib/me";
 import { ConfigWarning } from "@/components/ConfigWarning";
 import { AvailabilityTab } from "@/components/AvailabilityTab";
 import { ListTab } from "@/components/ListTab";
+import { FoodSuggestions } from "@/components/FoodSuggestions";
 
 type Tab = "availability" | "ideas" | "food";
 
@@ -107,6 +108,7 @@ export default function AppPage() {
             placeholder="Mac & cheese, pie, drinks…"
             buttonLabel="Add food"
             empty="Nobody's claimed a dish yet."
+            renderTop={(ctx) => <FoodSuggestions {...ctx} />}
           />
         )}
       </main>
